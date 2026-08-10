@@ -23,19 +23,6 @@ npx serve .
 
 Open `http://localhost:8080`
 
-## Deploy (get a live link)
-
-### Vercel
-```bash
-npx vercel --prod
-```
-
-### Netlify
-Drag the project folder to [app.netlify.com/drop](https://app.netlify.com/drop)
-
-### GitHub Pages
-Push to a repo, enable Pages from the `main` branch (root).
-
 ## Submit
 
 Live link → [Submission form](https://forms.gle/jM5hTaGvsrfEfixPA)
