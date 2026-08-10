@@ -22,9 +22,3 @@ npx serve .
 ```
 
 Open `http://localhost:8080`
-
-## Submit
-
-Live link → [Submission form](https://forms.gle/jM5hTaGvsrfEfixPA)
-
-Deadline: **11:59 pm, 13th August 2026**
