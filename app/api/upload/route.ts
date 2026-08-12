@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { put } from '@vercel/blob';
 
 export async function POST(req: Request) {
   try {
@@ -11,12 +12,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No image uploaded' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    
-    // Generate a unique ID
     const id = `hh26-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
+    const filename = `${id}.png`;
+
+    // If Vercel Blob is configured, use it (Production)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`shares/${filename}`, file, {
+        access: 'public',
+        addRandomSuffix: false // keeps the URL predictable or exact to our filename
+      });
+      return NextResponse.json({ id, url: blob.url });
+    } 
     
-    // Ensure the public/shares directory exists
+    // Fallback: Local File System (Local Development)
+    const buffer = Buffer.from(await file.arrayBuffer());
     const sharesDir = path.join(process.cwd(), 'public', 'shares');
     try {
       await mkdir(sharesDir, { recursive: true });
@@ -24,11 +33,12 @@ export async function POST(req: Request) {
       // Ignore if exists
     }
 
-    // Save the file
-    const filePath = path.join(sharesDir, `${id}.png`);
+    const filePath = path.join(sharesDir, filename);
     await writeFile(filePath, buffer);
 
-    return NextResponse.json({ id });
+    // Return a relative URL for local testing
+    return NextResponse.json({ id, url: `/shares/${filename}` });
+
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });

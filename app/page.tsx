@@ -557,8 +557,10 @@ export default function Home() {
       });
       const data = await res.json();
       
-      if (data.id) {
-        const shareUrl = `${window.location.origin}/share/${data.id}`;
+      if (data.id && data.url) {
+        const baseUrl = window.location.origin;
+        // Pass the image URL via query parameter so the share page knows exactly where it is (local or Vercel Blob)
+        const shareUrl = `${baseUrl}/share/${data.id}?img=${encodeURIComponent(data.url)}`;
         const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
         window.open(tweetUrl, '_blank', 'noopener,noreferrer');
       } else {

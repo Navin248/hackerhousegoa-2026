@@ -2,17 +2,24 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 type Props = {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ img?: string }>
 }
 
 // Generate Dynamic Metadata for Twitter OG
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params;
+  const { img } = await searchParams;
   
-  // In production, this would be the actual domain (e.g. https://hhgoa.com)
-  // For Vercel, you'd use process.env.VERCEL_URL
+  // If no specific image URL is provided in query, fallback to relative local route
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hhgoa.com'; 
-  const imageUrl = `${baseUrl}/shares/${id}.png`;
+  
+  let imageUrl = img;
+  if (!imageUrl) {
+    imageUrl = `${baseUrl}/shares/${id}.png`;
+  } else if (imageUrl.startsWith('/')) {
+    imageUrl = `${baseUrl}${imageUrl}`;
+  }
 
   return {
     title: 'HH Goa 2026 Signal',
@@ -38,9 +45,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function SharePage({ params }: Props) {
+export default async function SharePage({ params, searchParams }: Props) {
   const { id } = await params;
-  const imageUrl = `/shares/${id}.png`;
+  const { img } = await searchParams;
+  
+  const imageUrl = img || `/shares/${id}.png`;
 
   return (
     <div className="container animated-entrance" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
