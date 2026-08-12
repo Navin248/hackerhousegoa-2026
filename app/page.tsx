@@ -540,14 +540,35 @@ export default function Home() {
   const shareToX = async () => {
     if (!canvasRef.current) return;
     
-    // Convert canvas to blob
-    const blob = await new Promise<Blob>((resolve) => canvasRef.current!.toBlob((b) => resolve(b as Blob), 'image/png', 1));
-    
-    const text = currentFormat === 'frame'
-      ? 'Just got my HH Goa 2026 profile frame! 🌴\n\nBuild yours in seconds — no login needed.\n\n#FrameInGoa @hhgoa'
-      : 'Just got my HH Goa 2026 Builder ID! 🌴\n\nBuild yours in seconds — no login needed.\n\n#FrameInGoa @hhgoa';
+    // Set a loading state visually for the button if possible, but keep it simple
+    const originalText = document.getElementById('share-btn')?.innerText;
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) shareBtn.innerText = 'PREPARING...';
 
     try {
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => canvasRef.current!.toBlob((b) => resolve(b as Blob), 'image/png', 1));
+      
+      const text = currentFormat === 'frame'
+        ? 'Just got my HH Goa 2026 profile frame! 🌴\n\nBuild yours in seconds — no login needed.\n\n#FrameInGoa @hhgoa'
+        : 'Just got my HH Goa 2026 Builder ID! 🌴\n\nBuild yours in seconds — no login needed.\n\n#FrameInGoa @hhgoa';
+
+      // 1. Try Native Mobile Sharing (Attaches the actual image to the Twitter App!)
+      const file = new File([blob], currentFormat === 'frame' ? 'hh-goa-frame.png' : 'hh-goa-id.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            text: text,
+            files: [file]
+          });
+          if (shareBtn && originalText) shareBtn.innerText = originalText;
+          return; // Successfully shared natively!
+        } catch (err) {
+          console.log("Native share cancelled or failed, falling back to Web Intent", err);
+        }
+      }
+
+      // 2. Fallback for Desktop: Upload to server and use Web Intent with OG tags
       const formData = new FormData();
       formData.append('image', blob);
       
@@ -569,6 +590,8 @@ export default function Home() {
     } catch (e) {
       console.error(e);
       alert('Failed to generate share link. Please download instead.');
+    } finally {
+      if (shareBtn && originalText) shareBtn.innerText = originalText;
     }
   };
 
