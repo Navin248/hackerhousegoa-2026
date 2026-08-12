@@ -15,16 +15,39 @@ export async function POST(req: Request) {
     const id = `hh26-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
     const filename = `${id}.png`;
 
-    // If Vercel Blob is configured, use it (Production)
+    // 1. ImgBB (Free Alternative)
+    if (process.env.IMGBB_API_KEY) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const base64 = buffer.toString('base64');
+      
+      const imgbbForm = new FormData();
+      imgbbForm.append('key', process.env.IMGBB_API_KEY);
+      imgbbForm.append('image', base64);
+      imgbbForm.append('name', filename);
+
+      const response = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        body: imgbbForm
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        return NextResponse.json({ id, url: data.data.url });
+      } else {
+        throw new Error('ImgBB upload failed');
+      }
+    }
+
+    // 2. Vercel Blob (If configured)
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const blob = await put(`shares/${filename}`, file, {
         access: 'public',
-        addRandomSuffix: false // keeps the URL predictable or exact to our filename
+        addRandomSuffix: false
       });
       return NextResponse.json({ id, url: blob.url });
     } 
     
-    // Fallback: Local File System (Local Development)
+    // 3. Fallback: Local File System (Local Development)
     const buffer = Buffer.from(await file.arrayBuffer());
     const sharesDir = path.join(process.cwd(), 'public', 'shares');
     try {
@@ -36,7 +59,6 @@ export async function POST(req: Request) {
     const filePath = path.join(sharesDir, filename);
     await writeFile(filePath, buffer);
 
-    // Return a relative URL for local testing
     return NextResponse.json({ id, url: `/shares/${filename}` });
 
   } catch (error) {
