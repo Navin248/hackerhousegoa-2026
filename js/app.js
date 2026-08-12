@@ -161,25 +161,22 @@ function drawCoverImageCustom(ctx, img, boxX, boxY, boxW, boxH) {
     baseSh = baseSw / boxRatio;
   }
   
-  // The crop UI viewport has the same aspect ratio as boxW/boxH.
-  // We apply the cropState.scale to baseSw/baseSh.
   const scaledSw = baseSw / cropState.scale;
   const scaledSh = baseSh / cropState.scale;
   
-  // Base center offset in source pixels
   const centerSx = img.width / 2;
   const centerSy = img.height / 2;
   
-  // Map the cropState.x/y (which are in CSS pixels relative to the viewport) to image pixels.
-  // The viewport's current width corresponds to baseSw.
-  const viewportRect = cropViewport.getBoundingClientRect();
-  const scaleRatioX = baseSw / viewportRect.width;
-  const scaleRatioY = baseSh / viewportRect.height;
+  // Use stored viewport dimensions, fallback to box dimensions if somehow 0
+  const vpW = cropState.vpW || boxW;
+  const vpH = cropState.vpH || boxH;
+  
+  const scaleRatioX = baseSw / vpW;
+  const scaleRatioY = baseSh / vpH;
   
   const srcOffsetX = cropState.x * scaleRatioX;
   const srcOffsetY = cropState.y * scaleRatioY;
   
-  // Final top-left coordinates in source image
   const finalSx = centerSx - (scaledSw / 2) - srcOffsetX;
   const finalSy = centerSy - (scaledSh / 2) - srcOffsetY;
   
@@ -512,6 +509,11 @@ function render() {
 
 function updateCropImageTransform() {
   cropImage.style.transform = `translate(calc(-50% + ${cropState.x}px), calc(-50% + ${cropState.y}px)) scale(${cropState.scale})`;
+  const rect = cropViewport.getBoundingClientRect();
+  if (rect.width > 0) {
+    cropState.vpW = rect.width;
+    cropState.vpH = rect.height;
+  }
 }
 
 function setupCropEvents() {
