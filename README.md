@@ -13,12 +13,14 @@ A client-side web tool for the HH Goa 2026 shortlisting task. Upload a photo and
 
 ## Run locally
 
-```bash
-# Option 1: Python
-python -m http.server 8080
+Since this project uses Next.js for dynamic Open Graph (OG) image generation:
 
-# Option 2: npx
-npx serve .
+```bash
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev
 ```
 
-Open `http://localhost:8080`
+Open `http://localhost:3000`
