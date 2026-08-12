@@ -18,6 +18,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -27,6 +28,7 @@ body {
   background: var(--brand-primary);
   color: var(--brand-white);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, .font-heading {
@@ -50,22 +52,32 @@ a {
 .custom-header {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
   padding: 1rem 0;
   margin-bottom: 2rem;
   border-bottom: 1px solid rgba(255, 251, 232, 0.15);
   padding-bottom: 2rem;
+  overflow: hidden;
 }
 
 .header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   margin-bottom: 2rem;
+  width: 100%;
+}
+
+.header-logo {
+  flex-shrink: 0;
 }
 
 .header-logo img {
   height: 48px;
   width: auto;
+  max-width: 100%;
 }
 
 .countdown-wrap {
@@ -96,30 +108,38 @@ a {
 
 .header-main-title {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   position: relative;
   margin-bottom: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  gap: 0.15rem 0.35rem;
+  padding: 0 0.25rem;
 }
 
 .header-main-title .word {
   font-family: 'Imbue', serif;
   font-weight: 700;
-  font-size: clamp(4rem, 12vw, 10rem);
-  line-height: 0.8;
+  font-size: clamp(2.25rem, 10vw, 10rem);
+  line-height: 0.85;
   color: var(--brand-accent);
   text-transform: uppercase;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .goa-hindi-animated {
-  height: clamp(3rem, 8vw, 6rem);
+  height: clamp(2rem, 7vw, 6rem);
   width: auto;
-  margin: 0 -2%; /* Slight overlap over text */
+  max-width: min(28vw, 120px);
+  margin: 0;
   position: relative;
   z-index: 10;
   animation: floatHindi 3s ease-in-out infinite alternate;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+  flex-shrink: 0;
 }
 
 @keyframes floatHindi {
@@ -129,14 +149,22 @@ a {
 
 .header-bottom {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   font-family: 'Victor Mono', monospace;
   color: var(--brand-accent);
-  font-size: clamp(0.6rem, 2vw, 0.85rem);
+  font-size: clamp(0.55rem, 2.5vw, 0.85rem);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 1rem;
+  width: 100%;
+}
+
+.event-details,
+.studio-credit {
+  min-width: 0;
 }
 
 /* Format tabs */
@@ -356,9 +384,10 @@ a {
   background: #111;
   border-radius: 10px;
   overflow: hidden;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   max-width: 100%;
   box-shadow: inset 0 0 0 2px rgba(11, 104, 57, 0.3);
 }
@@ -660,4 +689,133 @@ a {
 .creator-credit a:hover {
   color: var(--brand-pink);
   text-shadow: 0 0 8px rgba(255, 0, 128, 0.4);
+}
+
+/* ── Mobile responsiveness ── */
+@media (max-width: 767px) {
+  .container {
+    padding: 0.75rem;
+  }
+
+  .custom-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .header-top {
+    margin-bottom: 1.25rem;
+  }
+
+  .header-logo img {
+    height: 36px;
+  }
+
+  .countdown-label {
+    font-size: 0.6rem;
+  }
+
+  .countdown-timer {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+  }
+
+  .header-main-title .word {
+    font-size: clamp(2rem, 11vw, 3.25rem);
+  }
+
+  .goa-hindi-animated {
+    height: clamp(1.75rem, 8vw, 2.75rem);
+    max-width: min(22vw, 90px);
+  }
+
+  .header-bottom {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.35rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+  }
+
+  .format-tabs {
+    gap: 0.4rem;
+  }
+
+  .tab-btn {
+    min-width: 0;
+    font-size: 0.82rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .floating-tag {
+    display: none;
+  }
+
+  .floating-3d {
+    animation: none;
+    transform: none;
+  }
+
+  .canvas-wrap {
+    margin: 0 auto;
+  }
+
+  #output-canvas {
+    max-height: 55vh;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions .btn {
+    width: 100%;
+  }
+
+  .footer-contacts-inline {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .dot-separator {
+    display: none;
+  }
+
+  .inline-contact {
+    font-size: 0.7rem;
+    word-break: break-all;
+  }
+}
+
+@media (max-width: 400px) {
+  .header-top {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .countdown-wrap {
+    align-items: center;
+  }
+
+  .header-main-title {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .header-main-title .word {
+    font-size: clamp(2.25rem, 14vw, 3rem);
+    line-height: 0.9;
+  }
+
+  .goa-hindi-animated {
+    height: clamp(2rem, 14vw, 2.75rem);
+    max-width: min(35vw, 100px);
+    margin: 0.15rem 0;
+  }
+
+  .event-details {
+    font-size: 0.58rem;
+    line-height: 1.4;
+    max-width: 100%;
+  }
 }
