@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Imbue:opsz,wght@10..100,500;10..100,700&family=Victor+Mono:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
 
 :root {
   --brand-primary: #0b6839;
@@ -622,3 +624,5 @@ a {
   font-size: 0.8rem;
   width: auto;
 }
+
+
