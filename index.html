@@ -52,7 +52,7 @@
       <div class="studio-controls">
         <section class="step-card" id="step-01">
           <div class="step-header">01 / PHOTO</div>
-          <h2 class="step-title">BUILD YOUR SIGNAL</h2>
+          <h2 class="step-title" id="step-01-title">BUILD YOUR SIGNAL</h2>
           <div class="upload-zone" id="upload-zone">
             <div id="upload-placeholder">
               <div class="upload-icon">📸</div>
@@ -63,6 +63,26 @@
             <img id="upload-preview" class="upload-preview" alt="Your uploaded photo" style="display:none">
           </div>
           <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif">
+
+          <div class="adjust-frame-ui hidden" id="adjust-frame-ui">
+            <div class="crop-viewport-wrapper">
+              <div class="crop-viewport" id="crop-viewport">
+                <img id="crop-image" alt="Adjust photo" draggable="false">
+                <div class="crop-overlay"></div>
+              </div>
+            </div>
+            <div class="adjust-controls">
+              <div class="zoom-control">
+                <span>−</span>
+                <input type="range" id="zoom-slider" min="1" max="3" step="0.01" value="1">
+                <span>+</span>
+              </div>
+              <div class="adjust-actions">
+                <button type="button" class="btn-text" id="reset-crop-btn">↺ RESET</button>
+                <button type="button" class="btn btn-primary" id="use-photo-btn">USE PHOTO →</button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="step-card hidden-step" id="step-02">
@@ -110,6 +130,9 @@
 
           <div class="actions">
             <div class="action-status hidden" id="action-status">YOUR SIGNAL IS READY.</div>
+            <button class="btn btn-outline hidden" id="adjust-photo-btn" type="button">
+              ↗ ADJUST PHOTO
+            </button>
             <button class="btn btn-primary" id="download-btn" type="button" disabled>
               ↓ DOWNLOAD
             </button>

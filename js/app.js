@@ -30,8 +30,15 @@ let previewObjectUrl = null;
 let builderTitle = randomTitle();
 let logoImg = null;
 let decoImg = null;
-let barcodeImg = null;
 
+// Crop State
+let cropState = { scale: 1, x: 0, y: 0 };
+let isDragging = false;
+let startX = 0, startY = 0;
+let initialPinchDistance = null;
+let initialScale = 1;
+
+// DOM Elements
 const fileInput = document.getElementById('file-input');
 const uploadZone = document.getElementById('upload-zone');
 const uploadPreview = document.getElementById('upload-preview');
@@ -40,7 +47,8 @@ const canvas = document.getElementById('output-canvas');
 const ctx = canvas.getContext('2d');
 const previewPlaceholder = document.getElementById('preview-placeholder');
 
-// Steps
+// Steps & UI
+const step01Title = document.getElementById('step-01-title');
 const step02 = document.getElementById('step-02');
 const step03 = document.getElementById('step-03');
 const frameSelectorContainer = document.getElementById('frame-selector-container');
@@ -48,6 +56,15 @@ const actionStatus = document.getElementById('action-status');
 const canvasWrap = document.querySelector('.canvas-wrap');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingText = document.getElementById('loading-text');
+
+// Adjust UI
+const adjustFrameUi = document.getElementById('adjust-frame-ui');
+const cropViewport = document.getElementById('crop-viewport');
+const cropImage = document.getElementById('crop-image');
+const zoomSlider = document.getElementById('zoom-slider');
+const resetCropBtn = document.getElementById('reset-crop-btn');
+const usePhotoBtn = document.getElementById('use-photo-btn');
+const adjustPhotoBtn = document.getElementById('adjust-photo-btn');
 
 // Controls
 const downloadBtn = document.getElementById('download-btn');
@@ -63,7 +80,7 @@ function randomTitle() {
 }
 
 function setStatus(msg) {
-  if(statusMsg) statusMsg.textContent = msg;
+  if (statusMsg) statusMsg.textContent = msg;
 }
 
 function loadImage(src) {
@@ -89,24 +106,6 @@ async function initAssets() {
 }
 
 // ---- Canvas Helpers ----
-
-function drawCoverImage(ctx, img, x, y, w, h) {
-  const imgRatio = img.width / img.height;
-  const boxRatio = w / h;
-  let sx, sy, sw, sh;
-  if (imgRatio > boxRatio) {
-    sh = img.height;
-    sw = sh * boxRatio;
-    sx = (img.width - sw) / 2;
-    sy = 0;
-  } else {
-    sw = img.width;
-    sh = sw / boxRatio;
-    sx = 0;
-    sy = (img.height - sh) / 2;
-  }
-  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-}
 
 function drawRoundedRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -142,9 +141,49 @@ function drawCropMarks(ctx, x, y, size, color) {
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  // Top Left
   ctx.moveTo(x, y + size); ctx.lineTo(x, y); ctx.lineTo(x + size, y);
   ctx.stroke();
+}
+
+// ---- Core Drawing Logic with Crop State ----
+
+function drawCoverImageCustom(ctx, img, boxX, boxY, boxW, boxH) {
+  // First calculate base auto-crop (cover)
+  const imgRatio = img.width / img.height;
+  const boxRatio = boxW / boxH;
+  
+  let baseSw, baseSh;
+  if (imgRatio > boxRatio) {
+    baseSh = img.height;
+    baseSw = baseSh * boxRatio;
+  } else {
+    baseSw = img.width;
+    baseSh = baseSw / boxRatio;
+  }
+  
+  // The crop UI viewport has the same aspect ratio as boxW/boxH.
+  // We apply the cropState.scale to baseSw/baseSh.
+  const scaledSw = baseSw / cropState.scale;
+  const scaledSh = baseSh / cropState.scale;
+  
+  // Base center offset in source pixels
+  const centerSx = img.width / 2;
+  const centerSy = img.height / 2;
+  
+  // Map the cropState.x/y (which are in CSS pixels relative to the viewport) to image pixels.
+  // The viewport's current width corresponds to baseSw.
+  const viewportRect = cropViewport.getBoundingClientRect();
+  const scaleRatioX = baseSw / viewportRect.width;
+  const scaleRatioY = baseSh / viewportRect.height;
+  
+  const srcOffsetX = cropState.x * scaleRatioX;
+  const srcOffsetY = cropState.y * scaleRatioY;
+  
+  // Final top-left coordinates in source image
+  const finalSx = centerSx - (scaledSw / 2) - srcOffsetX;
+  const finalSy = centerSy - (scaledSh / 2) - srcOffsetY;
+  
+  ctx.drawImage(img, finalSx, finalSy, scaledSw, scaledSh, boxX, boxY, boxW, boxH);
 }
 
 // ---- Variants Rendering (PFP) ----
@@ -155,7 +194,6 @@ function drawFramePFP(img, variant) {
   canvas.height = size;
   
   if (variant === '1') {
-    // 01: Clean HH Composition (Green/Yellow/Pink)
     const frameWidth = 90;
     const inner = size - frameWidth * 2;
     ctx.fillStyle = BRAND.primary;
@@ -164,7 +202,7 @@ function drawFramePFP(img, variant) {
     ctx.save();
     drawRoundedRect(ctx, frameWidth, frameWidth, inner, inner, 24);
     ctx.clip();
-    drawCoverImage(ctx, img, frameWidth, frameWidth, inner, inner);
+    drawCoverImageCustom(ctx, img, frameWidth, frameWidth, inner, inner);
     ctx.restore();
 
     ctx.strokeStyle = BRAND.accent;
@@ -198,17 +236,15 @@ function drawFramePFP(img, variant) {
     ctx.fillText('#FrameInGoa', size / 2, frameWidth / 2 + 4);
 
   } else if (variant === '2') {
-    // 02: Experimental (Black, Pink, Technical)
     const frameWidth = 60;
     const inner = size - frameWidth * 2;
     ctx.fillStyle = BRAND.black;
     ctx.fillRect(0, 0, size, size);
     
-    // Diagonal background pattern
     drawStripePattern(ctx, 0, 0, size, size, 'rgba(255, 0, 128, 0.1)', 24, 1);
 
     ctx.save();
-    drawCoverImage(ctx, img, frameWidth, frameWidth, inner, inner);
+    drawCoverImageCustom(ctx, img, frameWidth, frameWidth, inner, inner);
     ctx.restore();
     
     ctx.strokeStyle = BRAND.pink;
@@ -230,19 +266,17 @@ function drawFramePFP(img, variant) {
     ctx.textAlign = 'left';
     ctx.fillText('#FrameInGoa', 20, size - 40);
     
-    // Crop marks
     drawCropMarks(ctx, 10, 10, 30, BRAND.white);
     ctx.save(); ctx.translate(size, 0); ctx.rotate(Math.PI/2); drawCropMarks(ctx, 10, -10, 30, BRAND.white); ctx.restore();
 
   } else {
-    // 03: Minimal (Offwhite, Green)
     const frameWidth = 40;
     const inner = size - frameWidth * 2;
     ctx.fillStyle = BRAND.offwhite;
     ctx.fillRect(0, 0, size, size);
     
     ctx.save();
-    drawCoverImage(ctx, img, frameWidth, frameWidth, inner, inner);
+    drawCoverImageCustom(ctx, img, frameWidth, frameWidth, inner, inner);
     ctx.restore();
     
     ctx.strokeStyle = BRAND.primary;
@@ -274,7 +308,6 @@ function drawBuilderID(img, name, stack, variant) {
   const idNumber = 'HH26 / ' + Math.floor(10000 + Math.random() * 90000);
 
   if (variant === '1') {
-    // 01: Clean HH (Brand Colors)
     ctx.fillStyle = BRAND.offwhite;
     ctx.fillRect(0, 0, w, h);
 
@@ -310,7 +343,7 @@ function drawBuilderID(img, name, stack, variant) {
     ctx.save();
     drawRoundedRect(ctx, photoX + 12, photoY + 12, photoSize - 24, photoSize - 24, 24);
     ctx.clip();
-    drawCoverImage(ctx, img, photoX + 12, photoY + 12, photoSize - 24, photoSize - 24);
+    drawCoverImageCustom(ctx, img, photoX + 12, photoY + 12, photoSize - 24, photoSize - 24);
     ctx.restore();
 
     ctx.strokeStyle = BRAND.pink;
@@ -328,7 +361,6 @@ function drawBuilderID(img, name, stack, variant) {
     ctx.fillStyle = '#333';
     ctx.fillText(displayStack, w / 2, infoY + 100);
 
-    // Title badge
     const badgeW = Math.min(w - 120, ctx.measureText(builderTitle).width + 80);
     const badgeH = 72;
     const badgeX = (w - badgeW) / 2;
@@ -359,7 +391,6 @@ function drawBuilderID(img, name, stack, variant) {
     ctx.fillText('#FrameInGoa · hhgoa.com', w / 2, footerY + 100);
 
   } else if (variant === '2') {
-    // 02: Experimental (Black bg, pink/yellow accents, technical layout)
     ctx.fillStyle = BRAND.black;
     ctx.fillRect(0, 0, w, h);
     drawStripePattern(ctx, 0, 0, w, h, 'rgba(255, 0, 128, 0.05)', 40, 2);
@@ -368,7 +399,6 @@ function drawBuilderID(img, name, stack, variant) {
     ctx.lineWidth = 4;
     ctx.strokeRect(40, 40, w - 80, h - 80);
     
-    // Top markings
     ctx.font = '600 24px "Victor Mono", monospace';
     ctx.fillStyle = BRAND.accent;
     ctx.textAlign = 'left';
@@ -382,8 +412,7 @@ function drawBuilderID(img, name, stack, variant) {
     const photoY = 200;
     
     ctx.save();
-    drawCoverImage(ctx, img, photoX, photoY, photoSize, photoSize);
-    // Overlay scanline effect on photo
+    drawCoverImageCustom(ctx, img, photoX, photoY, photoSize, photoSize);
     for(let i=0; i<photoSize; i+=10) {
       ctx.fillStyle = 'rgba(0,0,0,0.1)';
       ctx.fillRect(photoX, photoY+i, photoSize, 2);
@@ -415,13 +444,11 @@ function drawBuilderID(img, name, stack, variant) {
     ctx.fillText('#FrameInGoa', 60, h - 120);
 
   } else {
-    // 03: Minimal (Cream & Green, very structured)
     ctx.fillStyle = BRAND.offwhite;
     ctx.fillRect(0, 0, w, h);
     
     ctx.strokeStyle = BRAND.primary;
     ctx.lineWidth = 1;
-    // Grid lines
     ctx.beginPath();
     ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h);
     ctx.moveTo(0, h/2); ctx.lineTo(w, h/2);
@@ -441,7 +468,7 @@ function drawBuilderID(img, name, stack, variant) {
     const photoY = 280;
     
     ctx.save();
-    drawCoverImage(ctx, img, photoX, photoY, photoW, photoH);
+    drawCoverImageCustom(ctx, img, photoX, photoY, photoW, photoH);
     ctx.restore();
     ctx.strokeRect(photoX, photoY, photoW, photoH);
     
@@ -470,11 +497,8 @@ function drawBuilderID(img, name, stack, variant) {
   }
 }
 
-// ---- Core Logic ----
-
 function render() {
   if (!uploadedImage) return;
-  
   if (currentFormat === 'frame') {
     drawFramePFP(uploadedImage, currentVariant);
   } else {
@@ -483,6 +507,88 @@ function render() {
     drawBuilderID(uploadedImage, name, stack, currentVariant);
   }
 }
+
+// ---- Crop Editor Logic ----
+
+function updateCropImageTransform() {
+  cropImage.style.transform = `translate(calc(-50% + ${cropState.x}px), calc(-50% + ${cropState.y}px)) scale(${cropState.scale})`;
+}
+
+function setupCropEvents() {
+  // Drag to pan
+  cropViewport.addEventListener('pointerdown', (e) => {
+    isDragging = true;
+    startX = e.clientX - cropState.x;
+    startY = e.clientY - cropState.y;
+    cropViewport.setPointerCapture(e.pointerId);
+  });
+  cropViewport.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    cropState.x = e.clientX - startX;
+    cropState.y = e.clientY - startY;
+    updateCropImageTransform();
+  });
+  cropViewport.addEventListener('pointerup', (e) => {
+    isDragging = false;
+    cropViewport.releasePointerCapture(e.pointerId);
+  });
+
+  // Zoom slider
+  zoomSlider.addEventListener('input', (e) => {
+    cropState.scale = parseFloat(e.target.value);
+    updateCropImageTransform();
+  });
+
+  // Pinch to zoom (touch)
+  cropViewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      initialPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialScale = cropState.scale;
+    }
+  }, {passive: false});
+
+  cropViewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const zoom = initialScale * (dist / initialPinchDistance);
+      cropState.scale = Math.min(Math.max(zoom, 1), 3);
+      zoomSlider.value = cropState.scale;
+      updateCropImageTransform();
+    }
+  }, {passive: false});
+
+  // Reset
+  resetCropBtn.addEventListener('click', () => {
+    cropState = { scale: 1, x: 0, y: 0 };
+    zoomSlider.value = 1;
+    updateCropImageTransform();
+  });
+
+  // Use Photo (Confirm crop)
+  usePhotoBtn.addEventListener('click', () => {
+    adjustFrameUi.classList.add('hidden');
+    uploadZone.classList.remove('hidden');
+    step01Title.textContent = 'BUILD YOUR SIGNAL';
+    startMicroAnimation();
+  });
+
+  // Adjust Photo (From Step 3)
+  adjustPhotoBtn.addEventListener('click', () => {
+    step02.classList.add('hidden-step');
+    step03.classList.add('hidden-step');
+    uploadZone.classList.add('hidden');
+    adjustFrameUi.classList.remove('hidden');
+    step01Title.textContent = 'ADJUST YOUR FRAME';
+  });
+}
+
 
 async function handleFile(file) {
   if (!file) return;
@@ -507,14 +613,41 @@ async function handleFile(file) {
     previewObjectUrl = URL.createObjectURL(blob);
     uploadedImage = await loadImage(previewObjectUrl);
 
-    // Update Step 1 UI
+    // Initial Cover object-fit for crop UI
+    cropImage.src = previewObjectUrl;
+    cropImage.onload = () => {
+      // Base aspect ratio logic for UI
+      const imgRatio = cropImage.naturalWidth / cropImage.naturalHeight;
+      const vpRect = cropViewport.getBoundingClientRect();
+      const vpRatio = vpRect.width / vpRect.height;
+      if (imgRatio > vpRatio) {
+        cropImage.style.height = '100%';
+        cropImage.style.width = 'auto';
+      } else {
+        cropImage.style.width = '100%';
+        cropImage.style.height = 'auto';
+      }
+    };
+
+    // Reset crop state
+    cropState = { scale: 1, x: 0, y: 0 };
+    zoomSlider.value = 1;
+    updateCropImageTransform();
+
+    // Show Adjust UI
+    uploadZone.classList.add('hidden');
+    adjustFrameUi.classList.remove('hidden');
+    step01Title.textContent = 'ADJUST YOUR FRAME';
+    
+    // Reset steps
+    step02.classList.add('hidden-step');
+    step03.classList.add('hidden-step');
+    
+    // Tiny thumbnail for upload zone
     uploadPreview.src = previewObjectUrl;
     uploadPreview.style.display = 'block';
     uploadPlaceholder.style.display = 'none';
     uploadZone.classList.add('has-photo');
-
-    // Trigger Progressive Disclosure sequence
-    startMicroAnimation();
 
   } catch (err) {
     setStatus('Could not load that photo. Try JPG or PNG.');
@@ -523,7 +656,6 @@ async function handleFile(file) {
 }
 
 function startMicroAnimation() {
-  // Show steps, hide placeholder
   step02.classList.remove('hidden-step');
   step03.classList.remove('hidden-step');
   previewPlaceholder.classList.add('hidden');
@@ -532,10 +664,10 @@ function startMicroAnimation() {
   canvas.style.display = 'block';
   loadingOverlay.classList.remove('hidden');
   actionStatus.classList.add('hidden');
+  adjustPhotoBtn.classList.add('hidden');
   downloadBtn.disabled = true;
   shareBtn.disabled = true;
 
-  // Animation Sequence
   const sequence = [
     { text: 'BUILDING SIGNAL...', delay: 0 },
     { text: 'FRAME / 0' + currentVariant, delay: 300 },
@@ -551,6 +683,7 @@ function startMicroAnimation() {
     render();
     loadingOverlay.classList.add('hidden');
     actionStatus.classList.remove('hidden');
+    adjustPhotoBtn.classList.remove('hidden');
     downloadBtn.disabled = false;
     shareBtn.disabled = false;
   }, 950);
@@ -596,7 +729,6 @@ async function shareToX() {
     }
   }
 
-  // Fallback
   await downloadImage();
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(tweetUrl, '_blank', 'noopener,noreferrer');
@@ -612,16 +744,31 @@ function setupUI() {
       btn.classList.add('active');
       currentFormat = btn.dataset.format;
       
-      // Update canvas ratio class
+      // Update viewports and ratios
       if (currentFormat === 'idcard') {
         canvasWrap.classList.add('is-idcard');
+        cropViewport.classList.add('is-idcard');
         document.querySelector('.builder-title-field').classList.remove('hidden');
       } else {
         canvasWrap.classList.remove('is-idcard');
+        cropViewport.classList.remove('is-idcard');
         document.querySelector('.builder-title-field').classList.add('hidden');
       }
       
-      if(uploadedImage) render();
+      // trigger image load again for crop viewport sizing
+      if(cropImage.src) {
+        cropImage.onload();
+      }
+
+      if(uploadedImage && !adjustFrameUi.classList.contains('hidden')) {
+         // Re-center on format change
+         cropState = { scale: 1, x: 0, y: 0 };
+         zoomSlider.value = 1;
+         updateCropImageTransform();
+      }
+      if(uploadedImage && !step03.classList.contains('hidden-step')) {
+         render();
+      }
     });
   });
 
@@ -654,7 +801,7 @@ function setupUI() {
   });
   stackInput.value = 'Full Stack';
   builderTitleEl.textContent = builderTitle;
-  document.querySelector('.builder-title-field').classList.add('hidden'); // Hide title by default for PFP
+  document.querySelector('.builder-title-field').classList.add('hidden');
 
   rerollBtn.addEventListener('click', () => {
     builderTitle = randomTitle();
@@ -662,12 +809,13 @@ function setupUI() {
     if(uploadedImage) render();
   });
 
-  // Live Preview on Input
   nameInput.addEventListener('input', () => { if(uploadedImage) render(); });
   stackInput.addEventListener('change', () => { if(uploadedImage) render(); });
 
   downloadBtn.addEventListener('click', downloadImage);
   shareBtn.addEventListener('click', shareToX);
+
+  setupCropEvents();
 }
 
 function initCountdown() {
