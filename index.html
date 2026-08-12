@@ -23,113 +23,112 @@
 <body class="animated-entrance">
   <div class="container">
     <header class="custom-header">
-      <div class="header-top">
-        <div class="header-logo">
-          <img src="assets/2-47.svg" alt="2:47PM Studio">
-        </div>
-        <div class="countdown-wrap">
-          <span class="countdown-label">GOA CALLING...</span>
-          <span id="countdown-timer" class="countdown-timer">00:00:00:00</span>
-        </div>
-      </div>
-
       <div class="header-main-title">
-        <span class="word">HACKER</span>
-        <img src="assets/goa_hindi.svg" alt="Goa" class="goa-hindi-animated">
-        <span class="word">HOUSE</span>
+        <div class="logo-lockup">
+          <span class="word">HACKER</span>
+          <img src="assets/goa_hindi.svg" alt="Goa" class="goa-hindi-animated">
+          <span class="word">HOUSE</span>
+        </div>
       </div>
-
       <div class="header-bottom">
-        <div class="event-details">GOA, INDIA · 28 - 31 OCT 2026</div>
-        <div class="studio-credit">2:47 PM STUDIO</div>
+        <div class="event-details">GOA / INDIA · 28—31 OCT 2026</div>
+      </div>
+      <div class="header-ambient">
+        <span class="ambient-item">GOA CALLING... <span id="countdown-timer">00:00:00:00</span></span>
+        <span class="ambient-item">2:47 PM STUDIO</span>
       </div>
     </header>
 
-    <div class="format-tabs">
-      <button class="tab-btn active" data-format="frame" type="button">PFP Frame</button>
-      <button class="tab-btn" data-format="idcard" type="button">Builder ID Card</button>
+    <div class="format-toggle-container">
+      <span class="format-label">FORMAT</span>
+      <div class="format-pill">
+        <button class="pill-btn active" data-format="frame" type="button">PFP <span class="helper">for X</span></button>
+        <button class="pill-btn" data-format="idcard" type="button">BUILDER <span class="helper">for post</span></button>
+      </div>
     </div>
 
-    <div class="workspace">
-      <section class="card">
-        <p class="card-label">Build This</p>
-        <h2>Create Your HH Goa Identity</h2>
-        <p class="card-desc">
-          Upload any photo — portrait, landscape, or off-center. I'll handle the crop.
-          No login, no waiting. Your photo stays in your browser.
-        </p>
-
-        <div class="upload-zone" id="upload-zone">
-          <div id="upload-placeholder">
-            <div class="upload-icon">📸</div>
-            <strong>Tap to upload a photo</strong>
-            <p>JPG · PNG · HEIC supported</p>
-            <p>Drag & drop works too</p>
+    <div class="studio-workspace">
+      <!-- Left Column -->
+      <div class="studio-controls">
+        <section class="step-card" id="step-01">
+          <div class="step-header">01 / PHOTO</div>
+          <h2 class="step-title">BUILD YOUR SIGNAL</h2>
+          <div class="upload-zone" id="upload-zone">
+            <div id="upload-placeholder">
+              <div class="upload-icon">📸</div>
+              <strong>DROP YOUR PHOTO</strong>
+              <p>JPG · PNG · HEIC</p>
+              <p>OR TAP TO SELECT</p>
+            </div>
+            <img id="upload-preview" class="upload-preview" alt="Your uploaded photo" style="display:none">
           </div>
-          <img id="upload-preview" class="upload-preview" alt="Your uploaded photo" style="display:none">
-        </div>
-        <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif">
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif">
+        </section>
 
-        <div class="fields hidden" id="id-fields">
-          <div class="field">
-            <label for="name-input">Your Name</label>
-            <input type="text" id="name-input" placeholder="e.g. Alex Builder" maxlength="40" autocomplete="name">
+        <section class="step-card hidden-step" id="step-02">
+          <div class="step-header">02 / IDENTITY</div>
+          <div class="fields" id="id-fields">
+            <div class="field">
+              <label for="name-input">YOUR NAME</label>
+              <input type="text" id="name-input" placeholder="e.g. Naveen Kumar" maxlength="40" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="stack-input">STACK</label>
+              <select id="stack-input"></select>
+            </div>
+            <div class="field builder-title-field">
+              <label>BUILDER TITLE</label>
+              <div class="builder-title-display" id="builder-title">Terminal Titan</div>
+              <button type="button" class="reroll-btn" id="reroll-title">↻ ROLL ANOTHER</button>
+            </div>
           </div>
-          <div class="field">
-            <label for="stack-input">Stack / Role</label>
-            <select id="stack-input"></select>
+        </section>
+      </div>
+
+      <!-- Right Column -->
+      <div class="studio-preview">
+        <section class="step-card hidden-step" id="step-03">
+          <div class="step-header">03 / ARTIFACT</div>
+          <h2 class="step-title">YOUR SIGNAL</h2>
+          
+          <div class="frame-selector hidden" id="frame-selector-container">
+            <span class="frame-label">FRAME</span>
+            <div class="frame-options">
+              <button class="frame-opt active" data-variant="1">01</button>
+              <button class="frame-opt" data-variant="2">02</button>
+              <button class="frame-opt" data-variant="3">03</button>
+            </div>
           </div>
-          <div class="field">
-            <label>Builder Title <span style="font-weight:400;text-transform:none">(auto-generated)</span></label>
-            <div class="builder-title-display" id="builder-title">Terminal Titan</div>
-            <button type="button" class="reroll-btn" id="reroll-title">↻ Roll a new title</button>
+
+          <div class="canvas-wrap">
+            <p class="preview-placeholder" id="preview-placeholder">Upload a photo to build</p>
+            <div class="loading-overlay hidden" id="loading-overlay">
+               <div class="loading-text" id="loading-text">BUILDING SIGNAL...</div>
+            </div>
+            <canvas id="output-canvas" style="display:none" aria-label="Generated HH Goa graphic"></canvas>
           </div>
-        </div>
 
-      </section>
-
-      <section class="card preview-panel">
-        <p class="card-label">Preview</p>
-        <h2>Your Graphic</h2>
-
-        <div class="canvas-wrap floating-3d">
-          <div class="floating-tag tag-1">#HHGoa2026</div>
-          <div class="floating-tag tag-2">#BuildInGoa</div>
-          <div class="floating-tag tag-3">#LFG</div>
-          <p class="preview-placeholder" id="preview-placeholder">Upload a photo to see your frame</p>
-          <canvas id="output-canvas" style="display:none" aria-label="Generated HH Goa graphic"></canvas>
-        </div>
-
-        <div class="actions">
-          <button class="btn btn-primary" id="download-btn" type="button" disabled>
-            ⬇ Download PNG
-          </button>
-          <button class="btn btn-secondary" id="share-btn" type="button" disabled>
-            Share to X
-          </button>
-        </div>
-        <p class="status-msg" id="status-msg"></p>
-      </section>
+          <div class="actions">
+            <div class="action-status hidden" id="action-status">YOUR SIGNAL IS READY.</div>
+            <button class="btn btn-primary" id="download-btn" type="button" disabled>
+              ↓ DOWNLOAD
+            </button>
+            <button class="btn btn-secondary" id="share-btn" type="button" disabled>
+              𝕏 SHARE TO X
+            </button>
+            <div class="hashtag">#FrameInGoa</div>
+          </div>
+          <p class="status-msg" id="status-msg"></p>
+        </section>
+      </div>
     </div>
   </div>
 
   <footer class="site-footer">
-    <div class="footer-bottom">
-      <p>HACKER HOUSE GOA 2026 · <a href="https://hhgoa.com/" target="_blank" rel="noopener">HHGOA.COM</a></p>
-      <p>4 DAYS. ONE RHYTHM. EVERYTHING INTENTIONAL.</p>
-
-      <div class="footer-contacts-inline">
-        <p class="creator-credit">BUILT WITH 💛 BY</p>
-        <a href="https://x.com/adamantine077" target="_blank" rel="noopener" class="inline-contact">
-          <img src="assets/x.svg" alt="X Account" class="contact-icon-small">
-          @adamantine077
-        </a>
-        <span class="dot-separator">·</span>
-        <a href="mailto:naveeengulgi2003@gmail.com" class="inline-contact">
-          <img src="assets/mail.svg" alt="Email" class="contact-icon-small">
-          naveeengulgi2003@gmail.com
-        </a>
-      </div>
+    <div class="footer-compact">
+      <p class="footer-brand">HH GOA 2026</p>
+      <p class="footer-tagline">4 DAYS. ONE RHYTHM. EVERYTHING INTENTIONAL.</p>
+      <p class="creator-credit">BUILT WITH 🧡 BY <a href="https://x.com/adamantine077" target="_blank" rel="noopener">@adamantine077</a></p>
     </div>
   </footer>
 </body>
